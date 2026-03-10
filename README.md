@@ -24,7 +24,7 @@ Instead of searching to a hardcoded depth (e.g., depth 5) and risking a timeout 
 
 The entire NegaMax loop is wrapped in a `try/catch` block listening for the `CancellationToken`'s `OperationCanceledException`. When the 5 seconds run out, the exception is caught, the incomplete deep search is abandoned, and the AI instantly returns the best move it found from the last _fully completed_ depth. No turns are ever forfeited.
 
-## 3. The Custom Scoring Heuristic
+## 3. The Custom Scoring Method
 
 When the `NegaMax` function hits a depth limit (or when time runs out), it must score the board. Simply counting discs is a notoriously bad strategy in Othello early in the game. The `EvaluateBoard` function uses two main metrics instead:
 
