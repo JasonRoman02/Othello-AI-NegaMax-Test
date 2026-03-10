@@ -10,56 +10,58 @@ public class NegaMaxAI : IOthelloAI
 {
     public string Name => "NegaMax AI";
 
+    // The game has a 5 second time limit, so it'll cut off before this anyways. This makes sure it will.
     private const int MaxDepth = 10;
 
     public async Task<Move?> GetMoveAsync(BoardState board, DiscColor yourColor, CancellationToken ct)
     {
-        // Give up the thread occasionally so the UI doesn't hang if this were synchronous,
-        // though Task.Run is likely better here if it's CPU bound.
-        await Task.Yield(); 
-        
-        var validMoves = GetValidMoves(board, yourColor);
-        if (validMoves.Count == 0) return null;
-
-        Move? bestMoveOverall = validMoves[0];
-
-        try
+        // Wrap the CPU-heavy search in Task.Run so it runs on a background thread
+        // and doesn't block the Avalonia UI thread.
+        return await Task.Run(() => 
         {
-            // Iterative deepening: Search progressively deeper until time runs out
-            for (int currentDepth = 1; currentDepth <= MaxDepth; currentDepth++)
+            var validMoves = GetValidMoves(board, yourColor);
+            if (validMoves.Count == 0) return null;
+
+            Move? bestMoveOverall = validMoves[0];
+
+            try
             {
-                Move bestMoveForDepth = validMoves[0];
-                int bestScoreForDepth = int.MinValue;
-
-                foreach (var move in validMoves)
+                // Iterative deepening: Search progressively deeper until time runs out
+                for (int currentDepth = 1; currentDepth <= MaxDepth; currentDepth++)
                 {
-                    ct.ThrowIfCancellationRequested();
+                    Move bestMoveForDepth = validMoves[0];
+                    int bestScoreForDepth = int.MinValue;
 
-                    var newBoard = board.Clone();
-                    ApplyMove(newBoard, move, yourColor);
-
-                    // The score for this move is the MINUS of the score for the opponent's best response
-                    // We pass in -Beta for Alpha and -Alpha for Beta
-                    int score = -NegaMax(newBoard, currentDepth - 1, int.MinValue + 1, int.MaxValue, GetOpponentColor(yourColor), ct);
-
-                    if (score > bestScoreForDepth)
+                    foreach (var move in validMoves)
                     {
-                        bestScoreForDepth = score;
-                        bestMoveForDepth = move;
+                        ct.ThrowIfCancellationRequested();
+
+                        var newBoard = board.Clone();
+                        ApplyMove(newBoard, move, yourColor);
+
+                        // The score for this move is the MINUS of the score for the opponent's best response
+                        // We pass in -Beta for Alpha and -Alpha for Beta
+                        int score = -NegaMax(newBoard, currentDepth - 1, int.MinValue + 1, int.MaxValue, GetOpponentColor(yourColor), ct);
+
+                        if (score > bestScoreForDepth)
+                        {
+                            bestScoreForDepth = score;
+                            bestMoveForDepth = move;
+                        }
                     }
+
+                    // If we completely finished searching this depth without timing out, save the best move
+                    bestMoveOverall = bestMoveForDepth;
                 }
-
-                // If we completely finished searching this depth without timing out, save the best move
-                bestMoveOverall = bestMoveForDepth;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // The 5 second time limit was reached!
-            // We swallow the exception and just return the best move found from the last fully completed depth.
-        }
+            catch (OperationCanceledException)
+            {
+                // The 5 second time limit was reached!
+                // We swallow the exception and just return the best move found from the last fully completed depth.
+            }
 
-        return bestMoveOverall;
+            return bestMoveOverall;
+        }, ct);
     }
 
     private int NegaMax(BoardState board, int depth, int alpha, int beta, DiscColor color, CancellationToken ct)
