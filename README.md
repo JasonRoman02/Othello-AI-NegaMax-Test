@@ -1,6 +1,6 @@
 # NegaMax AI Implementation Details
 
-This repository contains the `Othello.AI.NegaMax` project, an AI built to play Othello using the NegaMax algorithm with Alpha-Beta pruning, as requested for the assignment.
+This repository contains the `Othello.AI.NegaMax` project, an AI built to play Othello using the NegaMax algorithm with Alpha-Beta pruning, as requested for the assignment. Added in a copy in the `tournamentais` folder to allow it to go through the gauntlet as well. If you update it, make sure you copy over the dll from the bin into there.
 
 ## 1. How the AI Works (NegaMax & Alpha-Beta Pruning)
 
