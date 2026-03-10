@@ -10,7 +10,11 @@ public class NegaMaxAI : IOthelloAI
 {
     public string Name => "NegaMax AI";
 
-    // The game has a 5 second time limit, so it'll cut off before this anyways. This makes sure it will.
+    // The game does have a 5 second time limit, so we need to make sure we don't search too deep.
+    // This is a brute force algorithm, so it will search as deep as it can within the time limit.
+    // The deeper we search, the better the AI will play, but the longer it will take to find a move.
+    // A depth of 10 is pretty good for Othello, and with Iterative Deepening, we can get a pretty good move in 5 seconds.
+    
     private const int MaxDepth = 10;
 
     public async Task<Move?> GetMoveAsync(BoardState board, DiscColor yourColor, CancellationToken ct)
@@ -56,7 +60,7 @@ public class NegaMaxAI : IOthelloAI
             }
             catch (OperationCanceledException)
             {
-                // The 5 second time limit was reached!
+                // The 5 second time limit was reached, we are cut off before this anyways.
                 // We swallow the exception and just return the best move found from the last fully completed depth.
             }
 
@@ -86,7 +90,7 @@ public class NegaMaxAI : IOthelloAI
                  
                  // Pass turn case
                  // If we pass, our score is the negative of the opponent's score after they play
-                 return -NegaMax(board, depth - 1, -beta, -alpha, GetOpponentColor(color), ct);
+                 return -NegaMax(board, depth, -beta, -alpha, GetOpponentColor(color), ct);
             }
 
             return EvaluateBoard(board, color);
@@ -145,6 +149,8 @@ public class NegaMaxAI : IOthelloAI
         DiscColor opponent = GetOpponentColor(color);
 
         // Positional weights
+        // Corners are worth 100, edges are worth 10, and the rest are worth 1.
+        // Corners are pretty crucial in Othello, so we want to make sure we get them.
         int[,] weights = {
             { 100, -20,  10,   5,   5,  10, -20, 100 },
             { -20, -50,  -2,  -2,  -2,  -2, -50, -20 },
