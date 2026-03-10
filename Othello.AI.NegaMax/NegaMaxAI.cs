@@ -14,7 +14,7 @@ public class NegaMaxAI : IOthelloAI
     // This is a brute force algorithm, so it will search as deep as it can within the time limit.
     // The deeper we search, the better the AI will play, but the longer it will take to find a move.
     // A depth of 10 is pretty good for Othello, and with Iterative Deepening, we can get a pretty good move in 5 seconds.
-    
+
     private const int MaxDepth = 10;
 
     public async Task<Move?> GetMoveAsync(BoardState board, DiscColor yourColor, CancellationToken ct)
@@ -137,14 +137,18 @@ public class NegaMaxAI : IOthelloAI
              }
          }
 
-         if (myCount > oppCount) return 10000 + myCount; // Win
-         if (myCount < oppCount) return -10000 - oppCount; // Loss
+         if (myCount > oppCount) return 10000 + myCount; // Win, return 10000 on top of the myCount so the AI will aggressively chase the win.
+         if (myCount < oppCount) return -10000 - oppCount; // Loss, return -10000 on top of the oppCount in a similar mindset.
          return 0; // Draw
     }
 
     private int EvaluateBoard(BoardState board, DiscColor color)
     {
         // Simple heuristic: Count discs + weight corners heavily
+        // Counting discs is not a good strategy in Othello, the person who gets the most discs early almost always loses.
+        // So we give spaces weight for the AI to prioritize the right method. Plus actively watching a comeback is always fun.
+        // Hence, the heutristic below.
+
         int score = 0;
         DiscColor opponent = GetOpponentColor(color);
 
@@ -178,6 +182,8 @@ public class NegaMaxAI : IOthelloAI
         }
 
         // Add mobility to score (number of valid moves we have vs opponent)
+        // This allows the AI to know how "good of a position" it is in.
+        // If the AI has more choices than the opponent, it is in a better position.
         int myMoves = GetValidMoves(board, color).Count;
         int oppMoves = GetValidMoves(board, opponent).Count;
         
@@ -209,8 +215,13 @@ public class NegaMaxAI : IOthelloAI
 
     private bool IsValidMove(BoardState board, Move move, DiscColor color)
     {
+        // This acts as an observer of the game. It checks if a move is valid.
+        // First, check if the spot is empty.
         if (board.Grid[move.Row, move.Column] != DiscColor.None) return false;
 
+        // Check all 8 directions, the compass of the game.
+        // dr is Delta Row, dc is Delta Column. 
+        // For example, (-1, -1) is up-left. (-1, 0) is up. (0, 1) is right. etc.
         int[] dr = { -1, -1, -1, 0, 0, 1, 1, 1 };
         int[] dc = { -1, 0, 1, -1, 1, -1, 0, 1 };
         DiscColor opponent = GetOpponentColor(color);
@@ -221,23 +232,27 @@ public class NegaMaxAI : IOthelloAI
             int c = move.Column + dc[i];
             int count = 0;
 
+            // This makes sure that we stop on an empty space, the edge of the board, or our own color.
             while (r >= 0 && r < 8 && c >= 0 && c < 8 && board.Grid[r, c] == opponent)
             {
                 r += dr[i];
                 c += dc[i];
                 count++;
             }
-
+            // If we hit our own color, we are on the board and we have a count > 0, then the move is valid.
+            // YES to all three allows return true.
             if (r >= 0 && r < 8 && c >= 0 && c < 8 && board.Grid[r, c] == color && count > 0)
             {
                 return true;
             }
         }
-        return false;
+        return false; // If we get here, the move is invalid.
     }
 
     private void ApplyMove(BoardState board, Move move, DiscColor color)
     {
+        // Apply the move to the board.
+        // Same compass directions as before. Logic is similar to IsValidMove. This is the actual executor of the move.
         int[] dr = { -1, -1, -1, 0, 0, 1, 1, 1 };
         int[] dc = { -1, 0, 1, -1, 1, -1, 0, 1 };
         DiscColor opponent = GetOpponentColor(color);
@@ -246,7 +261,7 @@ public class NegaMaxAI : IOthelloAI
 
         for (int i = 0; i < 8; i++)
         {
-            var path = new List<Move>();
+            var path = new List<Move>(); // Saves the path of opponent discs to be flipped.
             int r = move.Row + dr[i];
             int c = move.Column + dc[i];
 
