@@ -153,7 +153,6 @@ public class NegaMaxAI : IOthelloAI
         DiscColor opponent = GetOpponentColor(color);
 
         // Positional weights
-        // Corners are worth 100, edges are worth 10, and the rest are worth 1.
         // Corners are pretty crucial in Othello, so we want to make sure we get them.
         int[,] weights = {
             { 100, -20,  10,   5,   5,  10, -20, 100 },
