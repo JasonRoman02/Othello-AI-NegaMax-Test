@@ -10,17 +10,11 @@ public class NegaMaxAI : IOthelloAI
 {
     public string Name => "NegaMax AI";
 
-    // The game does have a 5 second time limit, so we need to make sure we don't search too deep.
-    // This is a brute force algorithm, so it will search as deep as it can within the time limit.
-    // The deeper we search, the better the AI will play, but the longer it will take to find a move.
-    // A depth of 10 is pretty good for Othello, and with Iterative Deepening, we can get a pretty good move in 5 seconds.
-
     private const int MaxDepth = 10;
 
     public async Task<Move?> GetMoveAsync(BoardState board, DiscColor yourColor, CancellationToken ct)
     {
-        // Wrap the CPU-heavy search in Task.Run so it runs on a background thread
-        // and doesn't block the Avalonia UI thread.
+        
         return await Task.Run(() => 
         {
             var validMoves = GetValidMoves(board, yourColor);
@@ -42,9 +36,6 @@ public class NegaMaxAI : IOthelloAI
 
                         var newBoard = board.Clone();
                         ApplyMove(newBoard, move, yourColor);
-
-                        // The score for this move is the MINUS of the score for the opponent's best response
-                        // We pass in -Beta for Alpha and -Alpha for Beta
                         int score = -NegaMax(newBoard, currentDepth - 1, int.MinValue + 1, int.MaxValue, GetOpponentColor(yourColor), ct);
 
                         if (score > bestScoreForDepth)
@@ -214,13 +205,11 @@ public class NegaMaxAI : IOthelloAI
 
     private bool IsValidMove(BoardState board, Move move, DiscColor color)
     {
-        // This acts as an observer of the game. It checks if a move is valid.
         // First, check if the spot is empty.
         if (board.Grid[move.Row, move.Column] != DiscColor.None) return false;
 
-        // Check all 8 directions, the compass of the game.
+        // Check all 8 directions, the compass of the game. NW, N, NE, W, E, SW, S, SE
         // dr is Delta Row, dc is Delta Column. 
-        // For example, (-1, -1) is up-left. (-1, 0) is up. (0, 1) is right. etc.
         int[] dr = { -1, -1, -1, 0, 0, 1, 1, 1 };
         int[] dc = { -1, 0, 1, -1, 1, -1, 0, 1 };
         DiscColor opponent = GetOpponentColor(color);
@@ -251,7 +240,7 @@ public class NegaMaxAI : IOthelloAI
     private void ApplyMove(BoardState board, Move move, DiscColor color)
     {
         // Apply the move to the board.
-        // Same compass directions as before. Logic is similar to IsValidMove. This is the actual executor of the move.
+        // This executes the "stacking" discs rule integral to Othello
         int[] dr = { -1, -1, -1, 0, 0, 1, 1, 1 };
         int[] dc = { -1, 0, 1, -1, 1, -1, 0, 1 };
         DiscColor opponent = GetOpponentColor(color);
