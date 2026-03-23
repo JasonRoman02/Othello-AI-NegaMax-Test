@@ -138,7 +138,6 @@ public class NegaMaxAI : IOthelloAI
         // Simple heuristic: Count discs + weight corners heavily
         // Counting discs is not a good strategy in Othello, the person who gets the most discs early almost always loses.
         // So we give spaces weight for the AI to prioritize the right method. Plus actively watching a comeback is always fun.
-        // Hence, the heutristic below.
 
         int score = 0;
         DiscColor opponent = GetOpponentColor(color);
